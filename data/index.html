@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>جستجوگر ضرایب ارشد ۱۴۰۵</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" />
+    <style>
+        body { font-family: 'Vazirmatn', sans-serif; background-color: #f8fafc; }
+        .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+    </style>
+</head>
+<body class="min-h-screen py-8 px-4">
+    <div class="max-w-4xl mx-auto">
+        <!-- Header -->
+        <div class="text-center mb-10">
+            <h1 class="text-3xl font-bold text-indigo-900 mb-2">دیتابیس جامع ارشد ۱۴۰۵</h1>
+            <p class="text-slate-600">جستجو در کدرشته‌ها، دروس و ضرایب بر اساس دفترچه سازمان سنجش</p>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="glass p-6 rounded-2xl shadow-xl border border-slate-200 mb-8">
+            <div class="relative">
+                <input type="text" id="searchInput" 
+                    placeholder="نام رشته یا کدرشته را وارد کنید (مثلاً: ۱۲۷۷ یا کامپیوتر)..." 
+                    class="w-full p-4 pr-12 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all">
+                <span class="absolute left-4 top-4 text-slate-400">🔍</span>
+            </div>
+        </div>
+
+        <!-- Results Area -->
+        <div id="results" class="space-y-6">
+            <div class="text-center p-12 text-slate-400">
+                منتظر بارگذاری داده‌ها...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let arshadData = null;
+
+        // بارگذاری داده‌ها (فرض بر این است که فایل در کنار این فایل است)
+        async function loadData() {
+            try {
+                // جایگزین کردن نام فایل با نام واقعی فایل JSON شما
+                const response = await fetch('data/arshad_1405_database.json');
+                const data = await response.json();
+                arshadData = data;
+                renderResults(''); // نمایش اولیه
+            } catch (error) {
+                document.getElementById('results').innerHTML = `
+                    <div class="bg-red-50 p-4 rounded-xl text-red-700 text-center">
+                        خطا در بارگذاری دیتابیس. لطفا فایل JSON را چک کنید.
+                    </div>
+                `;
+            }
+        }
+
+        function renderResults(term) {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '';
+            
+            let found = false;
+
+            arshadData.groups.forEach(group => {
+                const filteredMajors = group.major_sets.filter(major => 
+                    major.code.includes(term) || major.title.includes(term)
+                );
+
+                if (filteredMajors.length > 0) {
+                    found = true;
+                    filteredMajors.forEach(major => {
+                        const card = document.createElement('div');
+                        card.className = 'glass p-6 rounded-2xl shadow-md border border-slate-100 hover:shadow-lg transition-all mb-4';
+                        
+                        let subGroupsHtml = major.sub_groups.map(sg => `
+                            <div class="mt-4 p-3 bg-indigo-50 rounded-lg">
+                                <div class="font-bold text-indigo-900 mb-2 text-sm">🔹 ${sg.description}</div>
+                                <div class="flex flex-wrap gap-2">
+                                    ${sg.coefficients.map((coef, idx) => `
+                                        <span class="px-2 py-1 bg-white border border-indigo-200 rounded text-xs">
+                                            ${major.subjects[idx]}: <strong class="text-indigo-600">${coef}</strong>
+                                        </span>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        `).join('');
+
+                        card.innerHTML = `
+                            <div class="flex justify-between items-start border-b border-slate-100 pb-3 mb-4">
+                                <h2 class="text-xl font-bold text-slate-800">${major.title}</h2>
+                                <span class="bg-indigo-600 text-white px-3 py-1 rounded-full text-sm font-mono">${major.code}</span>
+                            </div>
+                            <div class="text-sm text-slate-500 mb-2 font-semibold">📍 گروه: ${group.group_name}</div>
+                            ${subGroupsHtml}
+                        `;
+                        resultsDiv.appendChild(card);
+                    });
+                }
+            });
+
+            if (!found) {
+                resultsDiv.innerHTML = '<div class="text-center p-12 text-slate-400">نتیجه‌ای یافت نشد.</div>';
+            }
+        }
+
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            renderResults(e.target.value);
+        });
+
+        window.onload = loadData;
+    </script>
+</body>
+</html>
